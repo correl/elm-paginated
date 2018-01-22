@@ -26,11 +26,11 @@ to mean the final page of results has been reached.
     import Paginated exposing (Response(..))
 
     type alias Model =
-        { results : Maybe (Paginated.Response String) }
+        { results : Maybe (List String) }
 
     type Msg
         = Search
-        | Results (Result Http.Error (Paginated.Response String))
+        | Results (Result Http.Error (List String))
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
@@ -38,30 +38,12 @@ to mean the final page of results has been reached.
             Search ->
                 ( model, doSearch )
 
-            Results (Ok response) ->
-                case response of
-                    Partial request results ->
-                        ( { model
-                            | results =
-                                Maybe.map (\x -> Paginated.update x response)
-                                    model.results
-                          }
-                        , Paginated.send Results request
-                        )
-
-                    Complete results ->
-                        ( { model
-                            | results =
-                                Maybe.map (\x -> Paginated.update x response)
-                                    model.results
-                          }
-                        , Cmd.none
-                        )
-
-            Results (Err _) ->
-                ( model, Cmd.none )
+            Results results ->
+                ( { model | results = Result.toMaybe results }
+                , Cmd.none
+                )
 
     doSearch : Cmd Msg
     doSearch =
         Paginated.send Results <|
-            Paginated.get "http://example.com/items" string
+            Paginated.get "http://example.com/search?q=abc" string
