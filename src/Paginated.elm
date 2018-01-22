@@ -2,13 +2,11 @@ module Paginated
     exposing
         ( Request
         , RequestOptions
-        , Response(..)
         , request
         , get
         , post
         , send
-        , update
-        , httpRequest
+        , toTask
         )
 
 {-| A library for Facilitates fetching data from a paginated JSON API.
@@ -16,7 +14,7 @@ module Paginated
 
 # Requests and Responses
 
-@docs Request, Response, get, post
+@docs Request, get, post
 
 
 ## Custom requests
@@ -24,19 +22,14 @@ module Paginated
 @docs RequestOptions, request
 
 
-## Converting
-
-@docs httpRequest
-
-
 # Sending requests
 
 @docs send
 
 
-# Handling responses
+# Low-Level operations
 
-@docs Response, update
+@docs toTask
 
 -}
 
@@ -46,6 +39,7 @@ import Http
 import Json.Decode exposing (Decoder)
 import Maybe.Extra
 import Paginated.Util
+import Task exposing (Task)
 import Time
 
 
@@ -132,12 +126,46 @@ post url body decoder =
 {-| Send a `Request`.
 -}
 send :
-    (Result Http.Error (Response a) -> msg)
+    (Result Http.Error (List a) -> msg)
     -> Request a
     -> Cmd msg
 send resultToMessage request =
-    Http.send resultToMessage <|
-        httpRequest request
+    httpRequest request
+        |> Http.toTask
+        |> recurse
+        |> Task.attempt resultToMessage
+
+
+{-| Convert a `Request` into a `Task`.
+
+This is only really useful if you want to chain together a bunch of
+requests (or any other tasks) in a single command.
+
+-}
+toTask : Request a -> Task Http.Error (Response a)
+toTask =
+    httpRequest >> Http.toTask
+
+
+{-| Chains a paginated request task, fetching all available pages of
+data.
+-}
+recurse :
+    Task Http.Error (Response a)
+    -> Task Http.Error (List a)
+recurse =
+    Task.andThen
+        (\response ->
+            case response of
+                Partial request _ ->
+                    httpRequest request
+                        |> Http.toTask
+                        |> Task.map (update response)
+                        |> recurse
+
+                Complete xs ->
+                    Task.succeed xs
+        )
 
 
 {-| Append two paginated responses, collecting the results within.
