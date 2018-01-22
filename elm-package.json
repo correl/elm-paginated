@@ -1,5 +1,5 @@
 {
-    "version": "1.0.1",
+    "version": "2.0.0",
     "summary": "A library for fetching data from paginated JSON REST APIs.",
     "repository": "https://github.com/correl/elm-paginated.git",
     "license": "MIT",
