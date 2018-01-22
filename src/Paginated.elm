@@ -13,6 +13,7 @@ module Paginated
 
 {-| A library for Facilitates fetching data from a paginated JSON API.
 
+
 # Requests and Responses
 
 @docs Request, Response, get, post
@@ -39,6 +40,7 @@ module Paginated
 
 -}
 
+import Char
 import Dict exposing (Dict)
 import Http
 import Json.Decode exposing (Decoder)
@@ -186,12 +188,18 @@ fromResponse options response =
                 (Json.Decode.list options.decoder)
                 response.body
 
+        normalize : Dict String String -> Dict String String
+        normalize =
+            Dict.toList
+                >> Dict.fromList
+
+        nextPage : Maybe String
         nextPage =
-            Dict.get "Link" response.headers
+            header "Link" response.headers
                 |> Maybe.map Paginated.Util.links
                 |> Maybe.andThen (Dict.get "next")
     in
-        case nextPage of
+        case Debug.log "nextPage" nextPage of
             Nothing ->
                 Result.map Complete items
 
@@ -200,3 +208,18 @@ fromResponse options response =
                     (Partial (request { options | url = url }))
                     items
 
+
+{-| Look up a header (case-insensitive)
+-}
+header : String -> Dict String String -> Maybe String
+header header headers =
+    let
+        normalized =
+            Dict.toList headers
+                |> List.map (\( k, v ) -> ( String.map Char.toLower k, v ))
+                |> Dict.fromList
+
+        key =
+            String.map Char.toLower header
+    in
+        Dict.get key normalized
