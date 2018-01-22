@@ -2,7 +2,7 @@
     "version": "1.0.0",
     "summary": "A library for fetching data from paginated JSON REST APIs.",
     "repository": "https://github.com/correl/elm-paginated.git",
-    "license": "BSD3",
+    "license": "MIT",
     "source-directories": [
         "src"
     ],
