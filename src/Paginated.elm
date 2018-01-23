@@ -130,9 +130,7 @@ send :
     -> Request a
     -> Cmd msg
 send resultToMessage request =
-    httpRequest request
-        |> Http.toTask
-        |> recurse
+        toTask request
         |> Task.attempt resultToMessage
 
 
@@ -142,9 +140,9 @@ This is only really useful if you want to chain together a bunch of
 requests (or any other tasks) in a single command.
 
 -}
-toTask : Request a -> Task Http.Error (Response a)
+toTask : Request a -> Task Http.Error (List a)
 toTask =
-    httpRequest >> Http.toTask
+    httpRequest >> Http.toTask >> recurse
 
 
 {-| Chains a paginated request task, fetching all available pages of
