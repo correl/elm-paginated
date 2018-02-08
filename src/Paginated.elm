@@ -37,7 +37,6 @@ import Char
 import Dict exposing (Dict)
 import Http
 import Json.Decode exposing (Decoder)
-import Maybe.Extra
 import Paginated.Util
 import Task exposing (Task)
 import Time
@@ -130,7 +129,7 @@ send :
     -> Request a
     -> Cmd msg
 send resultToMessage request =
-        toTask request
+    toTask request
         |> Task.attempt resultToMessage
 
 
@@ -214,18 +213,13 @@ fromResponse options response =
                 (Json.Decode.list options.decoder)
                 response.body
 
-        normalize : Dict String String -> Dict String String
-        normalize =
-            Dict.toList
-                >> Dict.fromList
-
         nextPage : Maybe String
         nextPage =
             header "Link" response.headers
                 |> Maybe.map Paginated.Util.links
                 |> Maybe.andThen (Dict.get "next")
     in
-        case Debug.log "nextPage" nextPage of
+        case nextPage of
             Nothing ->
                 Result.map Complete items
 
