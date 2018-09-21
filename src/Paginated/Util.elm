@@ -25,13 +25,14 @@ links s =
                 _ ->
                     Nothing
     in
-        Regex.find Regex.All linkPattern s
-            |> List.map .submatches
-            |> List.map toTuples
-            |> Maybe.Extra.values
-            |> Dict.fromList
+    Regex.find linkPattern s
+        |> List.map .submatches
+        |> List.map toTuples
+        |> Maybe.Extra.values
+        |> Dict.fromList
 
 
 linkPattern : Regex.Regex
 linkPattern =
-    Regex.regex "<(.*?)>; rel=\"(.*?)\""
+    Regex.fromString "<(.*?)>; rel=\"(.*?)\""
+        |> Maybe.withDefault Regex.never

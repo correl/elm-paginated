@@ -1,13 +1,9 @@
-module Paginated
-    exposing
-        ( Request
-        , RequestOptions
-        , request
-        , get
-        , post
-        , send
-        , toTask
-        )
+module Paginated exposing
+    ( Request, get, post
+    , RequestOptions, request
+    , send
+    , toTask
+    )
 
 {-| A library for Facilitates fetching data from a paginated JSON API.
 
@@ -39,7 +35,6 @@ import Http
 import Json.Decode exposing (Decoder)
 import Paginated.Util
 import Task exposing (Task)
-import Time
 
 
 {-| Describes an API request.
@@ -50,7 +45,7 @@ type alias RequestOptions a =
     , url : String
     , body : Http.Body
     , decoder : Decoder a
-    , timeout : Maybe Time.Time
+    , timeout : Maybe Float
     , withCredentials : Bool
     }
 
@@ -78,7 +73,7 @@ headers and other options. For example:
 
     Paginated.request
         { method = "GET"
-        , headers = [Http.header "Private-Token" "XXXXXXXXXXXXXXXX"]
+        , headers = [ Http.header "Private-Token" "XXXXXXXXXXXXXXXX" ]
         , url = url
         , body = Http.emptyBody
         , decoder = decoder
@@ -128,8 +123,8 @@ send :
     (Result Http.Error (List a) -> msg)
     -> Request a
     -> Cmd msg
-send resultToMessage request =
-    toTask request
+send resultToMessage request_ =
+    toTask request_
         |> Task.attempt resultToMessage
 
 
@@ -154,8 +149,8 @@ recurse =
     Task.andThen
         (\response ->
             case response of
-                Partial request _ ->
-                    httpRequest request
+                Partial request_ _ ->
+                    httpRequest request_
                         |> Http.toTask
                         |> Task.map (update response)
                         |> recurse
@@ -176,8 +171,8 @@ update old new =
         ( Partial _ oldItems, Complete newItems ) ->
             Complete (oldItems ++ newItems)
 
-        ( Partial _ oldItems, Partial request newItems ) ->
-            Partial request (oldItems ++ newItems)
+        ( Partial _ oldItems, Partial request_ newItems ) ->
+            Partial request_ (oldItems ++ newItems)
 
 
 {-| Convert a `Request` to a `Http.Request` that can then be sent via
@@ -212,6 +207,7 @@ fromResponse options response =
             Json.Decode.decodeString
                 (Json.Decode.list options.decoder)
                 response.body
+                |> Result.mapError Json.Decode.errorToString
 
         nextPage : Maybe String
         nextPage =
@@ -219,20 +215,20 @@ fromResponse options response =
                 |> Maybe.map Paginated.Util.links
                 |> Maybe.andThen (Dict.get "next")
     in
-        case nextPage of
-            Nothing ->
-                Result.map Complete items
+    case nextPage of
+        Nothing ->
+            Result.map Complete items
 
-            Just url ->
-                Result.map
-                    (Partial (request { options | url = url }))
-                    items
+        Just url ->
+            Result.map
+                (Partial (request { options | url = url }))
+                items
 
 
 {-| Look up a header (case-insensitive)
 -}
 header : String -> Dict String String -> Maybe String
-header header headers =
+header name headers =
     let
         normalized =
             Dict.toList headers
@@ -240,6 +236,6 @@ header header headers =
                 |> Dict.fromList
 
         key =
-            String.map Char.toLower header
+            String.map Char.toLower name
     in
-        Dict.get key normalized
+    Dict.get key normalized
