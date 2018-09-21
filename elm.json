@@ -3,7 +3,7 @@
     "name": "correl/elm-paginated",
     "summary": "A library for fetching data from paginated JSON REST APIs.",
     "license": "MIT",
-    "version": "3.0.1",
+    "version": "4.0.0",
     "exposed-modules": [
         "Paginated"
     ],
